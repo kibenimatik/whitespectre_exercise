@@ -49,6 +49,22 @@ RSpec.describe GroupEventsController, type: :controller do
         expect(response_body).to eql(sample_response_body_for(GroupEvent.last))
       end
 
+      it 'creates group_event using start_date and duration params' do
+        group_event_params = attributes_for(:group_event, duration: 3)
+        group_event_params.delete(:end_date)
+
+        post :create, params: { group_event:  group_event_params}
+        expect(response_body['end_date']).to be_present
+      end
+
+      it 'creates group_event using end_date and duration params' do
+        group_event_params = attributes_for(:group_event, duration: 3)
+        group_event_params.delete(:start_date)
+
+        post :create, params: { group_event:  group_event_params}
+        expect(response_body['start_date']).to be_present
+      end
+
       it 'responds with 201' do
         post :create, params: { group_event: attributes_for(:group_event) }
         expect(response.code).to eql('201')
@@ -57,8 +73,15 @@ RSpec.describe GroupEventsController, type: :controller do
   end
 
   describe 'PUT #update' do
+    subject { create(:group_event) }
     let(:valid_attributes) { { name: 'New Name' } }
     let(:invalid_attributes) { { name: '' } }
+
+    it 'updates group_event end_date using duration param' do
+      put :update, params: { id: subject.id, group_event: {duration: 42} }
+      subject.reload
+      expect(subject.end_date).to eql(subject.start_date + 42)
+    end
 
     context 'when event is published' do
       subject { create(:group_event, state: 'published') }

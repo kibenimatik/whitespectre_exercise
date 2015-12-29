@@ -1,6 +1,9 @@
 require 'rails_helper'
 
 RSpec.describe GroupEvent, type: :model do
+  let(:start_date) { Date.today }
+  let(:end_date) { start_date.next_week }
+
   describe '#destroy' do
     subject { create(:group_event) }
     before { subject.destroy }
@@ -19,21 +22,38 @@ RSpec.describe GroupEvent, type: :model do
   end
 
   describe '#duration' do
-    context 'if both dates are present' do
-      let(:start_date) { Date.today }
-      let(:end_date) { start_date.next_week }
+    context 'when both dates are present' do
       subject { build(:group_event, start_date: start_date, end_date: end_date) }
 
       it 'returns distance in days between start and end dates' do
-        expect(subject.duration).to eql(7)
+        expect(subject.duration).to eql(6)
       end
     end
 
-    context 'if one of the date is not present' do
+    context 'when one of the date is not present' do
       subject { build(:group_event, end_date: nil) }
       it 'returns "undefined" text' do
-        expect(subject.duration).to eql('undefined')
+        expect{ subject.duration }.to raise_error(GroupEventDatesError)
       end
+    end
+  end
+
+  describe '#duration=' do
+    it 'sets end_date when start_date is present' do
+      subject = build(:group_event, start_date: start_date, end_date: nil)
+      subject.duration = 20
+      expect(subject.end_date).to eql(start_date + 20)
+    end
+
+    it 'sets start_date when end_date is present' do
+      subject = build(:group_event, start_date: nil, end_date: end_date)
+      subject.duration = 21
+      expect(subject.start_date).to eql(end_date - 21)
+    end
+
+    it 'raises exception when both dates are absent' do
+      subject = build(:group_event, start_date: nil, end_date: nil)
+      expect { subject.duration = 42 }.to raise_error(GroupEventDatesError)
     end
   end
 
